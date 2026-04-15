@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenTable — Full Information Architecture & User Flows</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+
+:root {
+  --ot-red: #C8102E;
+  --ot-dark: #0A0A0A;
+  --ot-charcoal: #141414;
+  --ot-surface: #1C1C1C;
+  --ot-border: #2A2A2A;
+  --ot-muted: #888;
+  --ot-text: #F2EDE8;
+  --ot-sub: #A8A0A0;
+  --accent-amber: #F5A623;
+  --accent-green: #2ECC71;
+  --accent-blue: #3B82F6;
+  --accent-purple: #8B5CF6;
+  --accent-teal: #14B8A6;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--ot-dark);
+  color: var(--ot-text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ── COVER ── */
+.cover {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 40px;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, #3a0a12 0%, var(--ot-dark) 70%);
+}
+.cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(200,16,46,0.04) 40px),
+                    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(200,16,46,0.04) 40px);
+}
+.cover-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(200,16,46,0.15); border: 1px solid rgba(200,16,46,0.4);
+  border-radius: 999px; padding: 6px 16px; font-size: 11px;
+  letter-spacing: 2px; text-transform: uppercase; color: #e07085;
+  margin-bottom: 28px; font-family: 'DM Mono', monospace;
+}
+.cover-badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--ot-red); display: block; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+.cover h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(36px, 5vw, 72px);
+  line-height: 1.05;
+  color: var(--ot-text);
+  margin-bottom: 16px;
+  position: relative;
+}
+.cover h1 em { color: var(--ot-red); font-style: italic; }
+.cover-sub {
+  font-size: 16px; color: var(--ot-sub); max-width: 560px;
+  margin: 0 auto 40px; font-weight: 300; line-height: 1.7;
+}
+.cover-meta {
+  display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ot-muted);
+}
+.cover-meta span { display: flex; align-items: center; gap: 6px; }
+.cover-meta strong { color: var(--ot-sub); }
+
+/* ── NAV TABS ── */
+.nav-tabs {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,10,10,0.96); border-bottom: 1px solid var(--ot-border);
+  backdrop-filter: blur(12px);
+  display: flex; gap: 0; overflow-x: auto;
+  padding: 0 24px;
+  scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  background: none; border: none; color: var(--ot-muted);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  padding: 16px 20px; cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--ot-text); }
+.tab-btn.active { color: var(--ot-red); border-bottom-color: var(--ot-red); }
+
+/* ── SECTIONS ── */
+.section { display: none; padding: 48px 32px 80px; max-width: 1400px; margin: 0 auto; }
+.section.active { display: block; }
+
+.sec-eyebrow {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 3px; text-transform: uppercase; color: var(--ot-red);
+  margin-bottom: 8px;
+}
+.sec-title {
+  font-family: 'DM Serif Display', serif; font-size: clamp(24px, 3vw, 40px);
+  margin-bottom: 8px;
+}
+.sec-desc {
+  font-size: 14px; color: var(--ot-sub); max-width: 660px;
+  margin-bottom: 48px; line-height: 1.7; font-weight: 300;
+}
+
+/* ── IA TREE ── */
+.ia-root {
+  display: flex; flex-direction: column; gap: 32px;
+}
+.ia-domain {
+  background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 16px; overflow: hidden;
+}
+.ia-domain-header {
+  padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--ot-border);
+}
+.ia-domain-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.ia-domain-label {
+  font-size: 12px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1.5px; font-family: 'DM Mono', monospace;
+}
+.ia-domain-url {
+  font-size: 11px; color: var(--ot-muted); font-family: 'DM Mono', monospace; margin-left: auto;
+}
+.ia-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1px;
+  background: var(--ot-border);
+}
+.ia-node {
+  background: var(--ot-surface); padding: 16px 20px;
+}
+.ia-node-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.ia-node-children {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.ia-child {
+  font-size: 11px; color: var(--ot-sub); font-family: 'DM Mono', monospace;
+  padding: 2px 0; display: flex; align-items: center; gap: 6px;
+}
+.ia-child::before { content: '→'; color: var(--ot-red); font-size: 10px; }
+
+/* ── FLOW DIAGRAMS ── */
+.flow-section { margin-bottom: 64px; }
+.flow-title {
+  font-size: 16px; font-weight: 600; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+}
+.flow-tag {
+  font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 8px;
+  border-radius: 4px; font-weight: 400; text-transform: uppercase; letter-spacing: 1px;
+}
+.flow-desc { font-size: 13px; color: var(--ot-sub); margin-bottom: 24px; }
+.flow-diagram {
+  display: flex; align-items: flex-start; gap: 0; overflow-x: auto;
+  padding-bottom: 12px;
+  scrollbar-width: thin; scrollbar-color: var(--ot-border) transparent;
+}
+.flow-step {
+  display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+}
+.flow-node {
+  background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 10px; padding: 12px 16px; min-width: 140px; max-width: 160px;
+  text-align: center; position: relative;
+}
+.flow-node.start { background: #1a0a0e; border-color: var(--ot-red); }
+.flow-node.end { background: #0a1a10; border-color: var(--accent-green); }
+.flow-node.decision { background: #1a140a; border-color: var(--accent-amber); border-radius: 4px; transform: rotate(0deg); }
+.flow-node.third-party { background: #0a0f1a; border-color: var(--accent-blue); }
+.flow-node.system { background: #120a1a; border-color: var(--accent-purple); }
+.flow-node-label { font-size: 12px; font-weight: 500; line-height: 1.3; }
+.flow-node-sub { font-size: 10px; color: var(--ot-muted); margin-top: 4px; font-family: 'DM Mono', monospace; }
+.flow-connector {
+  display: flex; align-items: center; padding: 0 4px; align-self: center;
+  margin-top: -20px;
+}
+.flow-arrow { color: var(--ot-muted); font-size: 18px; white-space: nowrap; }
+.flow-arrow-label { font-size: 10px; color: var(--ot-muted); text-align: center; margin-top: 2px; font-family: 'DM Mono', monospace; display: block; }
+.flow-branch {
+  display: flex; flex-direction: column; gap: 16px; align-self: flex-start; margin-top: 0;
+}
+.flow-branch-item { display: flex; align-items: center; gap: 0; }
+.branch-label { font-size: 10px; color: var(--accent-amber); font-family: 'DM Mono', monospace; min-width: 32px; text-align: center; }
+
+/* ── INTEGRATION DIAGRAM ── */
+.integration-hub {
+  position: relative; min-height: 600px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 40px 0;
+}
+.hub-center {
+  width: 120px; height: 120px; background: var(--ot-red);
+  border-radius: 50%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; z-index: 10; position: relative;
+  box-shadow: 0 0 0 12px rgba(200,16,46,0.15), 0 0 0 24px rgba(200,16,46,0.06);
+}
+.hub-center-label { font-size: 11px; font-weight: 700; line-height: 1.2; }
+.integration-ring {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.int-card {
+  position: absolute; background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 10px; padding: 10px 14px; min-width: 130px;
+  text-align: center; cursor: default;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.int-card:hover { transform: scale(1.04); }
+.int-card.consumer { border-color: rgba(59,130,246,0.5); }
+.int-card.consumer:hover { border-color: var(--accent-blue); }
+.int-card.pos { border-color: rgba(139,92,246,0.5); }
+.int-card.pos:hover { border-color: var(--accent-purple); }
+.int-card.delivery { border-color: rgba(245,166,35,0.5); }
+.int-card.delivery:hover { border-color: var(--accent-amber); }
+.int-card.payments { border-color: rgba(20,184,166,0.5); }
+.int-card.payments:hover { border-color: var(--accent-teal); }
+.int-card.marketing { border-color: rgba(46,204,113,0.5); }
+.int-card.marketing:hover { border-color: var(--accent-green); }
+.int-card.travel { border-color: rgba(249,115,22,0.5); }
+.int-card.ai { border-color: rgba(236,72,153,0.5); }
+.int-card-name { font-size: 12px; font-weight: 600; }
+.int-card-type { font-size: 10px; color: var(--ot-muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+.int-line {
+  position: absolute; background: linear-gradient(90deg, rgba(200,16,46,0.5), rgba(200,16,46,0.1));
+  height: 1px; transform-origin: left center;
+}
+
+/* ── INTEGRATION GRID ── */
+.int-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px; margin-top: 32px;
+}
+.int-group {
+  background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 12px; overflow: hidden;
+}
+.int-group-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--ot-border);
+  display: flex; align-items: center; gap: 8px;
+}
+.int-group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.int-group-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-family: 'DM Mono', monospace; }
+.int-group-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.int-item { display: flex; flex-direction: column; gap: 2px; }
+.int-item-name { font-size: 13px; font-weight: 500; }
+.int-item-desc { font-size: 11px; color: var(--ot-muted); line-height: 1.4; }
+
+/* ── USER JOURNEY ── */
+.journey-stages {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px;
+  background: var(--ot-border); border-radius: 12px; overflow: hidden;
+  margin-bottom: 32px;
+}
+.journey-stage { background: var(--ot-surface); padding: 16px; }
+.stage-name {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1.5px; font-family: 'DM Mono', monospace;
+  margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid;
+}
+.stage-name.discover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.stage-name.decide { border-color: var(--accent-purple); color: var(--accent-purple); }
+.stage-name.book { border-color: var(--ot-red); color: var(--ot-red); }
+.stage-name.dine { border-color: var(--accent-amber); color: var(--accent-amber); }
+.stage-name.post { border-color: var(--accent-green); color: var(--accent-green); }
+.stage-items { display: flex; flex-direction: column; gap: 6px; }
+.stage-item { font-size: 12px; color: var(--ot-sub); display: flex; gap: 6px; align-items: flex-start; }
+.stage-item::before { content: '•'; font-size: 14px; flex-shrink: 0; margin-top: -1px; }
+
+.journey-row { display: grid; grid-template-columns: 120px repeat(5, 1fr); gap: 1px; background: var(--ot-border); margin-bottom: 1px; }
+.journey-row-label { background: var(--ot-charcoal); padding: 14px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-family: 'DM Mono', monospace; color: var(--ot-muted); display: flex; align-items: center; }
+.journey-cell { background: var(--ot-surface); padding: 12px 14px; font-size: 12px; color: var(--ot-sub); line-height: 1.5; }
+.journey-cell.highlight { color: var(--ot-text); }
+.journey-emotion { display: flex; align-items: center; gap: 6px; font-size: 20px; }
+
+/* ── DECISION TREE ── */
+.decision-tree { overflow-x: auto; }
+.dt-row { display: flex; align-items: flex-start; justify-content: center; gap: 0; }
+.dt-box {
+  background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 10px; padding: 12px 18px; text-align: center;
+  min-width: 140px; flex-shrink: 0;
+}
+.dt-box.q { border-color: var(--accent-amber); background: #1a140a; }
+.dt-box.yes { border-color: var(--accent-green); background: #0a1a10; }
+.dt-box.no { border-color: #ef4444; background: #1a0a0a; }
+.dt-box.action { border-color: var(--accent-blue); background: #0a0f1a; }
+.dt-label { font-size: 12px; font-weight: 500; }
+.dt-sub { font-size: 10px; color: var(--ot-muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+.dt-v { width: 1px; height: 24px; background: var(--ot-border); margin: 0 auto; }
+.dt-h { display: flex; align-items: flex-start; gap: 0; }
+.dt-branch { display: flex; flex-direction: column; align-items: center; }
+.dt-branch-connector { display: flex; align-items: flex-start; }
+.dt-branch-line-h { height: 1px; background: var(--ot-border); width: 40px; margin-top: 24px; }
+.dt-branch-line-v { width: 1px; height: 24px; background: var(--ot-border); margin: 0 auto; }
+
+/* ── NOTIFICATION ── */
+.callout {
+  background: rgba(200,16,46,0.08); border: 1px solid rgba(200,16,46,0.25);
+  border-radius: 10px; padding: 16px 20px; margin-bottom: 32px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.callout-text { font-size: 13px; color: var(--ot-sub); line-height: 1.6; }
+.callout-text strong { color: var(--ot-text); }
+
+/* ── LEGEND ── */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 32px;
+  padding: 16px 20px; background: var(--ot-surface); border-radius: 10px;
+  border: 1px solid var(--ot-border);
+}
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ot-sub); }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* ── SWIMLANE ── */
+.swimlane-wrap { overflow-x: auto; margin: 32px 0; }
+.swimlane {
+  min-width: 900px; border: 1px solid var(--ot-border); border-radius: 12px; overflow: hidden;
+}
+.swimlane-header {
+  display: grid; background: var(--ot-charcoal); border-bottom: 1px solid var(--ot-border);
+}
+.swimlane-actor {
+  padding: 10px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1.5px; font-family: 'DM Mono', monospace; color: var(--ot-muted);
+  border-right: 1px solid var(--ot-border);
+}
+.swimlane-actor:last-child { border-right: none; }
+.swimlane-row {
+  display: grid; border-bottom: 1px solid var(--ot-border);
+}
+.swimlane-row:last-child { border-bottom: none; }
+.swimlane-cell {
+  padding: 14px 16px; border-right: 1px solid var(--ot-border);
+  font-size: 12px; color: var(--ot-sub); line-height: 1.5;
+  min-height: 60px; display: flex; align-items: flex-start;
+}
+.swimlane-cell:last-child { border-right: none; }
+.swimlane-cell .pill {
+  display: inline-block; background: rgba(200,16,46,0.15); color: #e07085;
+  border-radius: 4px; padding: 2px 8px; font-size: 11px;
+  font-family: 'DM Mono', monospace; margin-bottom: 4px;
+}
+.swimlane-cell .pill.blue { background: rgba(59,130,246,0.15); color: #93c5fd; }
+.swimlane-cell .pill.green { background: rgba(46,204,113,0.15); color: #6ee7b7; }
+.swimlane-cell .pill.amber { background: rgba(245,166,35,0.15); color: #fcd34d; }
+.swimlane-cell .pill.purple { background: rgba(139,92,246,0.15); color: #c4b5fd; }
+.swimlane-cell .pill.teal { background: rgba(20,184,166,0.15); color: #99f6e4; }
+
+/* ── PAGE STRUCTURE ── */
+.page-structure {
+  display: grid; grid-template-columns: 260px 1fr; gap: 20px;
+  margin-bottom: 32px;
+}
+.page-zones { display: flex; flex-direction: column; gap: 8px; }
+.page-zone {
+  background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 8px; padding: 12px 14px; cursor: pointer;
+  transition: border-color 0.2s;
+}
+.page-zone:hover { border-color: var(--ot-red); }
+.page-zone-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.page-zone-items { font-size: 11px; color: var(--ot-muted); font-family: 'DM Mono', monospace; }
+.page-wireframe {
+  background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 12px; overflow: hidden; min-height: 480px;
+  display: flex; flex-direction: column;
+}
+.wf-bar {
+  background: var(--ot-charcoal); border-bottom: 1px solid var(--ot-border);
+  padding: 10px 16px; font-size: 11px; color: var(--ot-muted);
+  font-family: 'DM Mono', monospace; display: flex; gap: 6px; align-items: center;
+}
+.wf-dot { width: 8px; height: 8px; border-radius: 50%; }
+.wf-nav {
+  background: var(--ot-charcoal); border-bottom: 1px solid var(--ot-border);
+  padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+}
+.wf-logo { width: 90px; height: 20px; background: var(--ot-red); border-radius: 4px; opacity: 0.8; }
+.wf-nav-items { display: flex; gap: 24px; }
+.wf-nav-item { width: 60px; height: 10px; background: var(--ot-border); border-radius: 3px; }
+.wf-nav-icons { display: flex; gap: 10px; }
+.wf-nav-icon { width: 28px; height: 28px; background: var(--ot-border); border-radius: 50%; }
+.wf-search-bar {
+  padding: 16px 20px; background: rgba(200,16,46,0.05);
+  border-bottom: 1px solid var(--ot-border);
+  display: flex; gap: 8px; align-items: center;
+}
+.wf-search-pill {
+  background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 6px; padding: 8px 12px; font-size: 11px; color: var(--ot-muted);
+  font-family: 'DM Mono', monospace; flex-shrink: 0;
+}
+.wf-search-input {
+  flex: 1; background: var(--ot-surface); border: 1px solid var(--ot-border);
+  border-radius: 6px; padding: 8px 12px; font-size: 11px; color: var(--ot-muted);
+  font-family: 'DM Mono', monospace;
+}
+.wf-cta {
+  background: var(--ot-red); border-radius: 6px; padding: 8px 16px;
+  font-size: 11px; font-weight: 600; color: white; white-space: nowrap;
+}
+.wf-body { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.wf-ai-block {
+  background: linear-gradient(135deg, rgba(200,16,46,0.06), rgba(100,0,20,0.06));
+  border: 1px solid rgba(200,16,46,0.2); border-radius: 8px; padding: 16px;
+}
+.wf-ai-title { font-size: 11px; color: var(--ot-sub); margin-bottom: 10px; font-family: 'DM Mono', monospace; }
+.wf-ai-chips { display: flex; gap: 8px; }
+.wf-chip { background: var(--ot-surface); border: 1px solid var(--ot-border); border-radius: 6px; padding: 6px 10px; font-size: 10px; color: var(--ot-muted); }
+.wf-card-row { display: flex; gap: 12px; }
+.wf-card { background: var(--ot-charcoal); border: 1px solid var(--ot-border); border-radius: 8px; flex: 1; overflow: hidden; }
+.wf-card-img { height: 80px; background: linear-gradient(135deg, #2a1a1a, #1a1a2a); }
+.wf-card-body { padding: 10px; }
+.wf-card-title { height: 8px; background: var(--ot-border); border-radius: 3px; margin-bottom: 6px; }
+.wf-card-sub { height: 6px; background: var(--ot-border); border-radius: 3px; width: 70%; }
+.wf-label { font-size: 11px; color: var(--ot-muted); font-family: 'DM Mono', monospace; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-badge"><span></span> UX Documentation — Scraped Live Apr 2026</div>
+  <h1>OpenTable<br><em>Information Architecture</em><br>& User Flows</h1>
+  <p class="cover-sub">A complete map of the OpenTable platform — every screen, flow, and 3rd party integration — built from live browser scraping of opentable.com.</p>
+  <div class="cover-meta">
+    <span><strong>Surfaces:</strong> Web + Mobile App</span>
+    <span><strong>Audiences:</strong> Diners · Restaurants · Partners</span>
+    <span><strong>Integrations:</strong> 12+ 3rd party systems</span>
+    <span><strong>Flows:</strong> 9 complete user flows</span>
+  </div>
+</div>
+
+<!-- NAVIGATION -->
+<nav class="nav-tabs" id="mainNav">
+  <button class="tab-btn active" onclick="showSection('ia')">Site Map & IA</button>
+  <button class="tab-btn" onclick="showSection('pages')">Page Anatomy</button>
+  <button class="tab-btn" onclick="showSection('flows')">User Flows</button>
+  <button class="tab-btn" onclick="showSection('journey')">Journey Map</button>
+  <button class="tab-btn" onclick="showSection('integrations')">3rd Party Integrations</button>
+  <button class="tab-btn" onclick="showSection('restaurants')">Restaurant Side</button>
+</nav>
+
+<!-- ─────────── 1. SITE MAP & IA ─────────── -->
+<section id="ia" class="section active">
+  <div class="sec-eyebrow">Section 01</div>
+  <h2 class="sec-title">Full Information Architecture</h2>
+  <p class="sec-desc">Every node discovered from live browser exploration of opentable.com — organized by domain (Diner, Restaurant, System), with URL paths and sub-page inventory.</p>
+
+  <div class="ia-root">
+
+    <!-- GLOBAL NAV -->
+    <div class="ia-domain">
+      <div class="ia-domain-header">
+        <div class="ia-domain-icon" style="background:#1a0a0e">🌐</div>
+        <div class="ia-domain-label">Global Navigation Shell</div>
+        <div class="ia-domain-url">All pages</div>
+      </div>
+      <div class="ia-grid">
+        <div class="ia-node">
+          <div class="ia-node-title">Top Utility Bar</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Mobile app link</div>
+            <div class="ia-child">For Businesses</div>
+            <div class="ia-child">FAQs</div>
+            <div class="ia-child">Language / Region selector (EN↓)</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Primary Nav</div>
+          <div class="ia-node-children">
+            <div class="ia-child">OpenTable logo → Home</div>
+            <div class="ia-child">Location selector / City picker</div>
+            <div class="ia-child">Search icon</div>
+            <div class="ia-child">Reservations calendar icon</div>
+            <div class="ia-child">Notifications bell</div>
+            <div class="ia-child">Globe / Explore icon</div>
+            <div class="ia-child">User avatar (logged-in)</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">User Avatar Dropdown</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Greeting (Hello, [Name])</div>
+            <div class="ia-child">My Profile → /user/dining-dashboard</div>
+            <div class="ia-child">My Dining History</div>
+            <div class="ia-child">My Saved Restaurants</div>
+            <div class="ia-child">Sign out</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Search Widget</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Date picker (calendar)</div>
+            <div class="ia-child">Time picker (dropdown)</div>
+            <div class="ia-child">Party size (1–20+)</div>
+            <div class="ia-child">Location/Restaurant/Cuisine input</div>
+            <div class="ia-child">Let's go CTA button</div>
+            <div class="ia-child">GPS "Get current location"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DINER / CONSUMER -->
+    <div class="ia-domain">
+      <div class="ia-domain-header">
+        <div class="ia-domain-icon" style="background:#0a0f1a">🍽️</div>
+        <div class="ia-domain-label">Diner (Consumer) — opentable.com</div>
+        <div class="ia-domain-url">opentable.com / *</div>
+      </div>
+      <div class="ia-grid">
+        <div class="ia-node">
+          <div class="ia-node-title">Homepage</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Global search widget</div>
+            <div class="ia-child">AI Find-my-table (prompts)</div>
+            <div class="ia-child">Location auto-detect</div>
+            <div class="ia-child">Recently Viewed restaurants</div>
+            <div class="ia-child">FAQ accordion</div>
+            <div class="ia-child">City browse grid (US + Global)</div>
+            <div class="ia-child">Footer (sitemap, SEO links)</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">City/Metro Landing</div>
+          <div class="ia-node-children">
+            <div class="ia-child">City hero + booking widget</div>
+            <div class="ia-child">Partner promo banner (Chase etc.)</div>
+            <div class="ia-child">Available for dinner now carousel</div>
+            <div class="ia-child">Neighborhood filters</div>
+            <div class="ia-child">Cuisine filters</div>
+            <div class="ia-child">Category filters (Kids, Dates, etc.)</div>
+            <div class="ia-child">Landmark-based browse</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Search Results</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Filter panel (price, cuisine, time, features)</div>
+            <div class="ia-child">Sort options</div>
+            <div class="ia-child">Restaurant cards (photo, rating, price, cuisine)</div>
+            <div class="ia-child">Time slot quick-pick buttons</div>
+            <div class="ia-child">Map view toggle</div>
+            <div class="ia-child">"Booked N times today" badge</div>
+            <div class="ia-child">Dietary restriction filter</div>
+            <div class="ia-child">Outdoor seating filter</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Restaurant Profile</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Hero photo gallery</div>
+            <div class="ia-child">Name, price range, cuisine tags</div>
+            <div class="ia-child">Overview tab</div>
+            <div class="ia-child">Menu tab</div>
+            <div class="ia-child">Booking widget (right rail)</div>
+            <div class="ia-child">About section</div>
+            <div class="ia-child">Hours & location map</div>
+            <div class="ia-child">Dietary tags</div>
+            <div class="ia-child">Verified diner reviews</div>
+            <div class="ia-child">Avg. rating + score breakdown</div>
+            <div class="ia-child">Notify Me (waitlist)</div>
+            <div class="ia-child">View Full Availability</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Reservation Flow</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Time slot selection</div>
+            <div class="ia-child">Login / Create Account gate</div>
+            <div class="ia-child">Diner details form</div>
+            <div class="ia-child">Special occasion tags</div>
+            <div class="ia-child">Dietary notes / special requests</div>
+            <div class="ia-child">Credit card guarantee (if req.)</div>
+            <div class="ia-child">Terms acknowledgment</div>
+            <div class="ia-child">Confirm button</div>
+            <div class="ia-child">Confirmation screen</div>
+            <div class="ia-child">Email confirmation sent</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">AI Concierge</div>
+          <div class="ia-node-children">
+            <div class="ia-child">"Find the right table" module</div>
+            <div class="ia-child">Natural language prompts</div>
+            <div class="ia-child">"Describe your ideal spot" input</div>
+            <div class="ia-child">AI-generated recommendations</div>
+            <div class="ia-child">Powered by AI badge</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Experiences & Events</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Exclusive dining experiences</div>
+            <div class="ia-child">Tasting menus / special seatings</div>
+            <div class="ia-child">Chef's table bookings</div>
+            <div class="ia-child">Private dining inquiry</div>
+            <div class="ia-child">Prepaid experiences</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Auth / Account Creation</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Sign up with email</div>
+            <div class="ia-child">Sign up with Google (OAuth)</div>
+            <div class="ia-child">Sign up with Facebook (OAuth)</div>
+            <div class="ia-child">Sign up with Apple (OAuth)</div>
+            <div class="ia-child">Login</div>
+            <div class="ia-child">Forgot password</div>
+            <div class="ia-child">Email verification</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USER PROFILE / DASHBOARD -->
+    <div class="ia-domain">
+      <div class="ia-domain-header">
+        <div class="ia-domain-icon" style="background:#120a1a">👤</div>
+        <div class="ia-domain-label">Diner Profile / Dashboard</div>
+        <div class="ia-domain-url">/user/dining-dashboard · /user/profile/*</div>
+      </div>
+      <div class="ia-grid">
+        <div class="ia-node">
+          <div class="ia-node-title">Dining Dashboard</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Avatar + name + location</div>
+            <div class="ia-child">Member since date</div>
+            <div class="ia-child">Upcoming reservations list</div>
+            <div class="ia-child">Reservation confirmation status</div>
+            <div class="ia-child">Modify / Cancel reservation</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Reservations Tab</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Upcoming (confirmed)</div>
+            <div class="ia-child">Past reservations</div>
+            <div class="ia-child">Cancelled reservations</div>
+            <div class="ia-child">Rebook past restaurant</div>
+            <div class="ia-child">Leave a review prompt</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Saved Restaurants</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Wishlist / Favorites grid</div>
+            <div class="ia-child">Book from saved restaurant</div>
+            <div class="ia-child">Remove from saved</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Account Details</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Name, email, phone</div>
+            <div class="ia-child">Location / country</div>
+            <div class="ia-child">Birthday / anniversary</div>
+            <div class="ia-child">Change password</div>
+            <div class="ia-child">Profile photo upload</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Partner Benefits</div>
+          <div class="ia-node-children">
+            <div class="ia-child">My active benefits (Uber One, etc.)</div>
+            <div class="ia-child">Uber One Exclusive Tables</div>
+            <div class="ia-child">Chase Sapphire Reserve tables</div>
+            <div class="ia-child">Visa Dining Collection</div>
+            <div class="ia-child">Connect / link partner account</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Dining Preferences</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Share dining info w/ restaurant groups (toggle)</div>
+            <div class="ia-child">Allow partner/affiliate sharing (toggle)</div>
+            <div class="ia-child">Share profile on phone/walk-in (toggle)</div>
+            <div class="ia-child">Third-party sharing controls</div>
+            <div class="ia-child">Email notification preferences</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Payment Methods</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Saved credit/debit cards</div>
+            <div class="ia-child">Add new card</div>
+            <div class="ia-child">Default card selection</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Dining Rewards / Points</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Points balance display</div>
+            <div class="ia-child">Earn 100 pts per reservation</div>
+            <div class="ia-child">Earn 1,000 pts (Bonus Point tables)</div>
+            <div class="ia-child">Redeem for bill credit</div>
+            <div class="ia-child">Redeem for Amazon gift card</div>
+            <div class="ia-child">Redeem for prepaid experience discount</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST-DINING -->
+    <div class="ia-domain">
+      <div class="ia-domain-header">
+        <div class="ia-domain-icon" style="background:#0a1a10">⭐</div>
+        <div class="ia-domain-label">Post-Dining Loop</div>
+        <div class="ia-domain-url">Email + in-app</div>
+      </div>
+      <div class="ia-grid">
+        <div class="ia-node">
+          <div class="ia-node-title">Review Flow</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Post-dining email prompt</div>
+            <div class="ia-child">Star rating (1–5)</div>
+            <div class="ia-child">Food / Service / Ambience sub-ratings</div>
+            <div class="ia-child">Written review text</div>
+            <div class="ia-child">Noise level / Value tags</div>
+            <div class="ia-child">Verified diner badge awarded</div>
+            <div class="ia-child">Points credited after review</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Notifications</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Reservation confirmation email</div>
+            <div class="ia-child">24hr reminder email/push</div>
+            <div class="ia-child">Cancellation confirmation</div>
+            <div class="ia-child">Points earned notification</div>
+            <div class="ia-child">Notify Me availability alert</div>
+            <div class="ia-child">Partner deal alerts</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Direct Messaging</div>
+          <div class="ia-node-children">
+            <div class="ia-child">In-app message to restaurant</div>
+            <div class="ia-child">Special request updates</div>
+            <div class="ia-child">Restaurant replies</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESTAURANT SOLUTIONS -->
+    <div class="ia-domain">
+      <div class="ia-domain-header">
+        <div class="ia-domain-icon" style="background:#1a1000">🏪</div>
+        <div class="ia-domain-label">Restaurant Solutions — For Businesses</div>
+        <div class="ia-domain-url">/restaurant-solutions / *</div>
+      </div>
+      <div class="ia-grid">
+        <div class="ia-node">
+          <div class="ia-node-title">Solutions Hub</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Take reservations</div>
+            <div class="ia-child">Market your restaurant</div>
+            <div class="ia-child">Run smoother shifts</div>
+            <div class="ia-child">Sell events & experiences</div>
+            <div class="ia-child">Grow private dining revenue</div>
+            <div class="ia-child">Grow guest relationships</div>
+            <div class="ia-child">Manage reviews</div>
+            <div class="ia-child">Manage guest profiles</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Who We Serve</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Restaurants (independent)</div>
+            <div class="ia-child">Restaurant groups & enterprise</div>
+            <div class="ia-child">Bars & wineries</div>
+            <div class="ia-child">Hotels & casinos</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Integrations Page</div>
+          <div class="ia-node-children">
+            <div class="ia-child">POS systems (Aloha/NCR, etc.)</div>
+            <div class="ia-child">Delivery (Uber Eats)</div>
+            <div class="ia-child">Marketing (Yext, Meta, Klaviyo)</div>
+            <div class="ia-child">Payments (Stripe)</div>
+            <div class="ia-child">Travel (Booking.com, Trip.com)</div>
+            <div class="ia-child">AI Voice (Slang AI)</div>
+            <div class="ia-child">View all integrations CTA</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Pricing & Plans</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Basic (Free to try)</div>
+            <div class="ia-child">Core (Most popular)</div>
+            <div class="ia-child">Pro (Most features)</div>
+            <div class="ia-child">Enterprise (Contact sales)</div>
+            <div class="ia-child">Plan comparison table</div>
+            <div class="ia-child">Find My Plan quiz</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Resources</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Industry insights / Blog</div>
+            <div class="ia-child">Dining trends report</div>
+            <div class="ia-child">Industry trends dashboard</div>
+            <div class="ia-child">Case studies</div>
+            <div class="ia-child">Webinars</div>
+            <div class="ia-child">OpenTable Academy</div>
+            <div class="ia-child">OpenTable APIs docs</div>
+          </div>
+        </div>
+        <div class="ia-node">
+          <div class="ia-node-title">Owner / Manager App</div>
+          <div class="ia-node-children">
+            <div class="ia-child">Table management / floor plan</div>
+            <div class="ia-child">Reservation queue</div>
+            <div class="ia-child">Guest CRM (profiles)</div>
+            <div class="ia-child">Analytics dashboard</div>
+            <div class="ia-child">Online waitlist</div>
+            <div class="ia-child">Benchmark reporting</div>
+            <div class="ia-child">Direct messaging (guest-to-restaurant)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────── 2. PAGE ANATOMY ─────────── -->
+<section id="pages" class="section">
+  <div class="sec-eyebrow">Section 02</div>
+  <h2 class="sec-title">Page Anatomy</h2>
+  <p class="sec-desc">Zone-by-zone breakdown of key page types with annotated wireframes.</p>
+
+  <h3 style="font-size:15px;margin-bottom:20px;color:var(--ot-sub)">Homepage — opentable.com</h3>
+  <div class="page-structure">
+    <div class="page-zones">
+      <div class="page-zone">
+        <div class="page-zone-name">🔝 Utility Bar</div>
+        <div class="page-zone-items">Mobile · For Businesses · FAQs · Language</div>
+      </div>
+      <div class="page-zone">
+        <div class="page-zone-name">🧭 Primary Nav</div>
+        <div class="page-zone-items">Logo · City · Icons: Calendar, Bell, Globe, Search, Avatar</div>
+      </div>
+      <div class="page-zone">
+        <div class="page-zone-name">🔍 Search Bar</div>
+        <div class="page-zone-items">Date · Time · Party Size · Location input · CTA</div>
+      </div>
+      <div class="page-zone">
+        <div class="page-zone-name">🤖 AI Discovery Block</div>
+        <div class="page-zone-items">Natural language prompts · "Describe your ideal spot"</div>
+      </div>
+      <div class="page-zone">
+        <div class="page-zone-name">🕐 Recently Viewed</div>
+        <div class="page-zone-items">Restaurant cards with real-time "Booked N times today"</div>
+      </div>
+      <div class="page-zone">
+        <div class="page-zone-name">📖 FAQ Accordion</div>
+        <div class="page-zone-items">How it works · Rewards · Cancellation policy</div>
+      </div>
+      <div class="page-zone">
+        <div class="page-zone-name">🗺️ City Browse Grid</div>
+        <div class="page-zone-items">Top US cities · Global cities · SEO link matrix</div>
+      </div>
+      <div class="page-zone">
+        <div class="page-zone-name">🔗 Footer</div>
+        <div class="page-zone-items">Solutions · Features · More · App links · Booking Holdings</div>
+      </div>
+    </div>
+    <div class="page-wireframe">
+      <div class="wf-bar">
+        <div class="wf-dot" style="background:#ef4444"></div>
+        <div class="wf-dot" style="background:#f59e0b"></div>
+        <div class="wf-dot" style="background:#10b981"></div>
+        <span style="margin-left:8px">opentable.com</span>
+      </div>
+      <div style="background:var(--ot-charcoal);padding:4px 16px;border-bottom:1px solid var(--ot-border);font-size:10px;color:var(--ot-muted);font-family:'DM Mono',monospace;display:flex;justify-content:flex-end;gap:20px">
+        <span>Mobile</span><span>For Businesses</span><span>FAQs</span><span>EN ↓</span>
+      </div>
+      <div class="wf-nav">
+        <div class="wf-logo"></div>
+        <div class="wf-nav-icons">
+          <div class="wf-nav-icon"></div>
+          <div class="wf-nav-icon"></div>
+          <div class="wf-nav-icon"></div>
+          <div class="wf-nav-icon"></div>
+          <div class="wf-nav-icon" style="background:var(--ot-red)"></div>
+        </div>
+      </div>
+      <div class="wf-search-bar">
+        <div class="wf-search-pill">📅 Apr 17</div>
+        <div class="wf-search-pill">⏱ 8:30 PM</div>
+        <div class="wf-search-pill">👥 4 people</div>
+        <div class="wf-search-input">🔍 Location, Restaurant, or Cuisine</div>
+        <div class="wf-cta">Let's go</div>
+      </div>
+      <div class="wf-body">
+        <div class="wf-ai-block">
+          <div class="wf-ai-title">✨ Find the right table in Bangalore — Powered by AI</div>
+          <div class="wf-ai-chips">
+            <div class="wf-chip">Best sushi near me?</div>
+            <div class="wf-chip">Where for steak?</div>
+            <div class="wf-chip">Popular brunch spots</div>
+            <div class="wf-chip" style="border-color:var(--ot-red);color:var(--ot-red)">Describe your ideal spot →</div>
+          </div>
+        </div>
+        <div>
+          <div class="wf-label">Recently Viewed</div>
+          <div class="wf-card-row">
+            <div class="wf-card"><div class="wf-card-img" style="background:linear-gradient(135deg,#2a1a0a,#1a2a2a)"></div><div class="wf-card-body"><div class="wf-card-title"></div><div class="wf-card-sub"></div></div></div>
+            <div class="wf-card"><div class="wf-card-img" style="background:linear-gradient(135deg,#0a1a2a,#2a0a1a)"></div><div class="wf-card-body"><div class="wf-card-title"></div><div class="wf-card-sub"></div></div></div>
+            <div class="wf-card"><div class="wf-card-img" style="background:linear-gradient(135deg,#1a2a0a,#0a1a2a)"></div><div class="wf-card-body"><div class="wf-card-title"></div><div class="wf-card-sub"></div></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="wf-label">Frequently Asked Questions</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="background:var(--ot-charcoal);border:1px solid var(--ot-border);border-radius:6px;padding:10px 14px;font-size:11px;color:var(--ot-sub)">Why should I use OpenTable? ↓</div>
+            <div style="background:var(--ot-charcoal);border:1px solid var(--ot-border);border-radius:6px;padding:10px 14px;font-size:11px;color:var(--ot-sub)">How do I earn & redeem points? ↓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px;margin:40px 0 20px;color:var(--ot-sub)">Diner Profile Dashboard — /user/dining-dashboard</h3>
+  <div class="page-structure">
+    <div class="page-zones">
+      <div class="page-zone"><div class="page-zone-name">👤 Profile Header</div><div class="page-zone-items">Avatar · Name · Location · Member Since · Photo upload</div></div>
+      <div class="page-zone"><div class="page-zone-name">📋 Left Sidebar Nav</div><div class="page-zone-items">Reservations · Saved Restaurants · Account Details · Partner Benefits · Preferences · Payment Methods</div></div>
+      <div class="page-zone"><div class="page-zone-name">📅 Reservations Panel</div><div class="page-zone-items">Upcoming · Confirmation status · Date/Time/Party · Modify/Cancel</div></div>
+      <div class="page-zone"><div class="page-zone-name">🎁 Partner Benefits Panel</div><div class="page-zone-items">Active: Uber One · Available: Chase Sapphire Reserve · Visa Dining Collection</div></div>
+      <div class="page-zone"><div class="page-zone-name">⚙️ Preferences Panel</div><div class="page-zone-items">3 data-sharing toggles · Third-party controls · Email notifications</div></div>
+    </div>
+    <div class="page-wireframe" style="min-height:380px">
+      <div class="wf-bar"><div class="wf-dot" style="background:#ef4444"></div><div class="wf-dot" style="background:#f59e0b"></div><div class="wf-dot" style="background:#10b981"></div><span style="margin-left:8px">opentable.com/user/dining-dashboard</span></div>
+      <div style="display:grid;grid-template-columns:200px 1fr;flex:1">
+        <div style="background:var(--ot-charcoal);border-right:1px solid var(--ot-border);padding:20px 16px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--ot-border)">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--ot-red)"></div>
+            <div><div style="height:8px;background:var(--ot-border);border-radius:3px;width:60px;margin-bottom:4px"></div><div style="height:6px;background:var(--ot-border);border-radius:3px;width:40px"></div></div>
+          </div>
+          <div style="font-size:11px;color:var(--ot-red);font-family:'DM Mono',monospace;font-weight:600">Reservations</div>
+          <div style="font-size:11px;color:var(--ot-muted);font-family:'DM Mono',monospace">Saved Restaurants</div>
+          <div style="font-size:11px;color:var(--ot-muted);font-family:'DM Mono',monospace">Account Details</div>
+          <div style="font-size:11px;color:var(--ot-muted);font-family:'DM Mono',monospace">Partner Benefits</div>
+          <div style="font-size:11px;color:var(--ot-muted);font-family:'DM Mono',monospace">Preferences</div>
+          <div style="font-size:11px;color:var(--ot-muted);font-family:'DM Mono',monospace">Payment Methods</div>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Upcoming Reservations</div>
+          <div style="background:var(--ot-charcoal);border:1px solid var(--ot-border);border-radius:8px;padding:14px;display:flex;gap:12px;align-items:center">
+            <div style="width:60px;height:60px;border-radius:8px;background:linear-gradient(135deg,#2a1a0a,#1a0a0a);flex-shrink:0"></div>
+            <div style="flex:1"><div style="height:8px;background:var(--ot-border);border-radius:3px;width:70%;margin-bottom:6px"></div><div style="display:flex;gap:6px;align-items:center"><div style="width:8px;height:8px;border-radius:50%;background:var(--accent-green)"></div><div style="height:6px;background:var(--ot-border);border-radius:3px;width:50%"></div></div><div style="height:6px;background:var(--ot-border);border-radius:3px;width:60%;margin-top:6px"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────── 3. USER FLOWS ─────────── -->
+<section id="flows" class="section">
+  <div class="sec-eyebrow">Section 03</div>
+  <h2 class="sec-title">User Flows</h2>
+  <p class="sec-desc">9 core flows mapped end-to-end, including happy paths, branches, and error states. Each step references actual UI elements scraped from live OpenTable pages.</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ot-red)"></div> Start / End</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-amber)"></div> Decision / Branch</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-blue)"></div> 3rd Party System</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-purple)"></div> System / Backend</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-green)"></div> Success State</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ot-surface)"></div> UI Step</div>
+  </div>
+
+  <!-- FLOW 1: DISCOVERY TO RESERVATION -->
+  <div class="flow-section">
+    <div class="flow-title">
+      Flow 1 — Discovery → Reservation (Core Booking Flow)
+      <span class="flow-tag" style="background:rgba(200,16,46,0.15);color:var(--ot-red)">Primary</span>
+    </div>
+    <p class="flow-desc">The central user journey — from landing on OpenTable to a confirmed reservation. Covers search, filtering, restaurant profile, and booking gate.</p>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-actor">Homepage</div>
+          <div class="swimlane-actor">Search / Browse</div>
+          <div class="swimlane-actor">Filter</div>
+          <div class="swimlane-actor">Restaurant Profile</div>
+          <div class="swimlane-actor">Auth Gate</div>
+          <div class="swimlane-actor">Booking Form</div>
+          <div class="swimlane-actor">Backend</div>
+          <div class="swimlane-actor">Confirmation</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-cell highlight"><span class="pill">START</span><br>User lands on opentable.com</div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-cell">Sets Date, Time, Party Size, Location in Search Widget</div>
+          <div class="swimlane-cell highlight">Results page loads with restaurant cards + time slot buttons</div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell">Browses card grid. Sees rating, cuisine, price, "Booked N times today"</div>
+          <div class="swimlane-cell highlight">Applies filters: cuisine, price, dietary, outdoor, features</div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Views profile: photos, reviews, menu, hours, availability widget. Clicks time slot.</div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill amber">GATE</span><br>Logged in? → continue<br>Not logged in? → Sign up or Login (Google/FB/Apple/Email)</div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Fills: name, email, phone. Adds occasion tags, special requests, dietary notes. Credit card if required.</div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill purple">SYSTEM</span><br>Reserves slot in real-time. Sends confirmation email. Awards 100 pts (or 1000 bonus pts).</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(8,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill green">SUCCESS</span><br>Confirmation screen. Email sent. Dashboard updated. Option to add to calendar.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW 2: AI CONCIERGE -->
+  <div class="flow-section">
+    <div class="flow-title">Flow 2 — AI Concierge Discovery <span class="flow-tag" style="background:rgba(139,92,246,0.15);color:var(--accent-purple)">AI-Powered</span></div>
+    <p class="flow-desc">User doesn't know what they want — uses natural language to describe their ideal dining experience.</p>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-actor">Homepage</div>
+          <div class="swimlane-actor">AI Input</div>
+          <div class="swimlane-actor">AI Processing</div>
+          <div class="swimlane-actor">Results</div>
+          <div class="swimlane-actor">Booking</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell highlight">User sees "Find the right table" module with suggested prompts</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell">Clicks preset prompt ("best sushi near me") or types custom description</div>
+          <div class="swimlane-cell highlight">"Describe your ideal spot" → freeform text e.g. "romantic Italian with outdoor seating for 2"</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill purple">AI ENGINE</span><br>NLP parsing → maps to cuisine, vibe, features, price range, location</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">AI-curated restaurant list displayed with match reasoning</div>
+          <div class="swimlane-cell">→ Standard booking flow (Flow 1)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW 3: MODIFY / CANCEL -->
+  <div class="flow-section">
+    <div class="flow-title">Flow 3 — Modify or Cancel Reservation <span class="flow-tag" style="background:rgba(245,166,35,0.15);color:var(--accent-amber)">Post-Booking</span></div>
+    <p class="flow-desc">Manage an existing reservation — change date/time/party size or cancel within the restaurant's cancellation window.</p>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-actor">Entry Point</div>
+          <div class="swimlane-actor">Reservation Detail</div>
+          <div class="swimlane-actor">Decision</div>
+          <div class="swimlane-actor">Action</div>
+          <div class="swimlane-actor">Outcome</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell highlight">Email confirmation link OR Profile → Reservations OR Notification in app</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Reservation detail: restaurant, date, time, party, status (confirmed)</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill amber">BRANCH</span><br>Modify? → change date/time/party<br>Cancel? → check window<br>Message restaurant? → direct message</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Modify: select new time slot from restaurant availability<br>Cancel: confirm cancel dialog (warn if outside window → potential fee)</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill green">DONE</span> Confirmation email sent. Dashboard updated. Cancellation fee charged if applicable.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW 4: REVIEW -->
+  <div class="flow-section">
+    <div class="flow-title">Flow 4 — Post-Dining Review Flow <span class="flow-tag" style="background:rgba(46,204,113,0.15);color:var(--accent-green)">Post-Dining</span></div>
+    <p class="flow-desc">After a visit, OpenTable prompts the verified diner to leave a review and earn points.</p>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-actor">Trigger</div>
+          <div class="swimlane-actor">Review Form</div>
+          <div class="swimlane-actor">Ratings</div>
+          <div class="swimlane-actor">Submit</div>
+          <div class="swimlane-actor">Reward</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell highlight">Post-dining email prompt OR in-app notification after reservation date passes</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Review form opens. Pre-filled: restaurant name, date of visit.</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Overall ⭐⭐⭐⭐⭐ · Food rating · Service rating · Ambience rating · Noise level · Value tags · Written review text</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Submit. Verified diner badge applied. Review published on restaurant profile.</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill green">POINTS</span> Dining points credited to account balance. Eligible for rewards redemption.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW 5: NOTIFY ME (WAITLIST) -->
+  <div class="flow-section">
+    <div class="flow-title">Flow 5 — Notify Me / Waitlist <span class="flow-tag" style="background:rgba(59,130,246,0.15);color:var(--accent-blue)">Availability</span></div>
+    <p class="flow-desc">When no availability exists, users set a "Notify Me" alert for hard-to-get tables.</p>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-actor">No Availability State</div>
+          <div class="swimlane-actor">Notify Me Setup</div>
+          <div class="swimlane-actor">Backend Monitor</div>
+          <div class="swimlane-actor">Alert + Booking</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell highlight">User searches — no slots available for selected date/time</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Clicks "Notify Me". Sets preferred date/time window. Confirms email/push preference. (macOS + opentable.com only)</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill purple">SYSTEM</span> Real-time slot monitoring. Cancellation triggers slot opening.</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill">ALERT</span> Push notification / email: "A table is now available!" → Deep link into booking flow.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW 6: POINTS REDEMPTION -->
+  <div class="flow-section">
+    <div class="flow-title">Flow 6 — Points Redemption <span class="flow-tag" style="background:rgba(245,166,35,0.15);color:var(--accent-amber)">Rewards</span></div>
+    <p class="flow-desc">Earned dining points can be redeemed for bill credits, experience discounts, or Amazon gift cards.</p>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-actor">Profile</div>
+          <div class="swimlane-actor">Points View</div>
+          <div class="swimlane-actor">Redemption Type</div>
+          <div class="swimlane-actor">Confirm</div>
+          <div class="swimlane-actor">Fulfillment</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell highlight">User navigates to Diner Profile (avatar menu)</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Points balance displayed. History of earned points per reservation visible.</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill amber">CHOOSE</span><br>💳 Bill credit at restaurant<br>🎫 Discount on prepaid experience<br>🛒 Amazon gift card</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Confirm redemption. Points deducted from balance.</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill green">DONE</span> Credit applied / Gift card emailed / Discount code generated.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW 7: ACCOUNT CREATION -->
+  <div class="flow-section">
+    <div class="flow-title">Flow 7 — Account Creation / Sign Up <span class="flow-tag" style="background:rgba(20,184,166,0.15);color:var(--accent-teal)">Auth</span></div>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-actor">Trigger</div>
+          <div class="swimlane-actor">Auth Method</div>
+          <div class="swimlane-actor">OAuth (if social)</div>
+          <div class="swimlane-actor">Profile Setup</div>
+          <div class="swimlane-actor">Confirmation</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell highlight">Booking attempt without account OR manual sign up from nav</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill amber">CHOOSE</span><br>📧 Email + password<br>🔵 Google<br>🔵 Facebook<br>🍎 Apple</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill blue">OAUTH</span> Redirect to Google/Facebook/Apple consent screen → token returned</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Name, phone, location, birthday (optional). Email verification (if email signup).</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill green">DONE</span> Account created. Redirected back to booking or dashboard. Welcome email sent.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW 8: PARTNER BENEFITS ACTIVATION -->
+  <div class="flow-section">
+    <div class="flow-title">Flow 8 — Partner Benefit Activation (e.g. Uber One / Chase Sapphire) <span class="flow-tag" style="background:rgba(59,130,246,0.15);color:var(--accent-blue)">3rd Party</span></div>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-actor">Entry</div>
+          <div class="swimlane-actor">Partner Benefits Page</div>
+          <div class="swimlane-actor">Link Account</div>
+          <div class="swimlane-actor">Verification</div>
+          <div class="swimlane-actor">Unlocked</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell highlight">Profile → Partner Benefits OR partner promotion banner on city page</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Sees: My Benefits (Uber One active) + More Partners: Chase Sapphire Reserve, Visa Dining Collection</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Clicks partner card → redirected to Uber/Chase/Visa portal to link card or verify membership</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill blue">3RD PARTY</span> Partner API verifies membership / card eligibility → returns status to OpenTable</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill green">UNLOCKED</span> "Primetime" exclusive tables now visible in search. $300 dining credit applied (Chase). VIP access badge on profile.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW 9: DIRECT MESSAGING -->
+  <div class="flow-section">
+    <div class="flow-title">Flow 9 — Diner ↔ Restaurant Direct Message <span class="flow-tag" style="background:rgba(20,184,166,0.15);color:var(--accent-teal)">Communication</span></div>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-actor">Diner</div>
+          <div class="swimlane-actor">OpenTable App</div>
+          <div class="swimlane-actor">Restaurant System</div>
+          <div class="swimlane-actor">Restaurant Staff</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell highlight">Has upcoming reservation. Wants to add special request after booking (e.g. allergy discovered).</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Opens reservation detail. "Message restaurant" button shown (only if restaurant has enabled it). Types message.</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Message delivered to restaurant's OpenTable Manager dashboard. Notification sent.</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Staff reads message. Adds note to guest profile. Replies via platform.</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="swimlane-cell highlight"><span class="pill green">REPLY</span> Diner receives push notification + in-app reply from restaurant.</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ─────────── 4. JOURNEY MAP ─────────── -->
+<section id="journey" class="section">
+  <div class="sec-eyebrow">Section 04</div>
+  <h2 class="sec-title">End-to-End Journey Map</h2>
+  <p class="sec-desc">The diner's full emotional journey across 5 stages — Discover, Decide, Book, Dine, Post-Visit — mapped against touchpoints, actions, pain points, and emotions.</p>
+
+  <div class="journey-stages">
+    <div class="journey-stage"><div class="stage-name discover">Discover</div><div class="stage-items"><div class="stage-item">Homepage lands</div><div class="stage-item">AI prompts / search</div><div class="stage-item">City page browse</div><div class="stage-item">Filter results</div><div class="stage-item">"Booked today" signal</div></div></div>
+    <div class="journey-stage"><div class="stage-name decide">Decide</div><div class="stage-items"><div class="stage-item">Restaurant profile</div><div class="stage-item">Photo gallery</div><div class="stage-item">Verified reviews</div><div class="stage-item">Menu browse</div><div class="stage-item">Hours / location</div></div></div>
+    <div class="journey-stage"><div class="stage-name book">Book</div><div class="stage-items"><div class="stage-item">Time slot selection</div><div class="stage-item">Auth gate</div><div class="stage-item">Booking form</div><div class="stage-item">Confirm CTA</div><div class="stage-item">Email confirmation</div></div></div>
+    <div class="journey-stage"><div class="stage-name dine">Dine</div><div class="stage-items"><div class="stage-item">Reminder notification</div><div class="stage-item">Direct message</div><div class="stage-item">Arrive at restaurant</div><div class="stage-item">Dining experience</div><div class="stage-item">Points accrual</div></div></div>
+    <div class="journey-stage"><div class="stage-name post">Post-Visit</div><div class="stage-items"><div class="stage-item">Review prompt email</div><div class="stage-item">Submit review</div><div class="stage-item">Earn verified badge</div><div class="stage-item">Redeem points</div><div class="stage-item">Saved to favorites</div></div></div>
+  </div>
+
+  <div style="border-radius:12px;overflow:hidden;border:1px solid var(--ot-border)">
+    <div class="journey-row" style="grid-template-columns:120px repeat(5,1fr)">
+      <div class="journey-row-label" style="background:var(--ot-charcoal)">Touchpoints</div>
+      <div class="journey-cell highlight">Homepage · City page · Search results · AI Concierge · Notifications</div>
+      <div class="journey-cell highlight">Restaurant profile · Photo gallery · Reviews · Menu · Map widget</div>
+      <div class="journey-cell highlight">Time slot widget · Auth modal · Booking form · Confirmation screen · Email</div>
+      <div class="journey-cell highlight">Email reminder · Push notification · In-app message to restaurant</div>
+      <div class="journey-cell highlight">Post-dining email · Review form · Points dashboard · Saved restaurants</div>
+    </div>
+    <div class="journey-row" style="grid-template-columns:120px repeat(5,1fr)">
+      <div class="journey-row-label">User Goals</div>
+      <div class="journey-cell">Find a good restaurant for occasion · Filter for dietary/vibe · Compare options quickly</div>
+      <div class="journey-cell">Verify quality · Read real reviews · Check menu & price · Assess availability</div>
+      <div class="journey-cell">Secure the table quickly · Add special requests · Not jump through too many hoops</div>
+      <div class="journey-cell">Arrive on time · Have restaurant know my preferences · Enjoy the meal</div>
+      <div class="journey-cell">Share feedback · Get rewarded · Remember for next time · Rebook easily</div>
+    </div>
+    <div class="journey-row" style="grid-template-columns:120px repeat(5,1fr)">
+      <div class="journey-row-label">Pain Points</div>
+      <div class="journey-cell" style="color:#ef9090">Overwhelming choice · Not knowing which filters to use · Bangalore has limited restaurants</div>
+      <div class="journey-cell" style="color:#ef9090">Fake reviews (solved by verified-diner only) · No nutrition info · Menu not always up to date</div>
+      <div class="journey-cell" style="color:#ef9090">Auth friction for first-timers · Credit card required feels disproportionate · Slot not available for desired time</div>
+      <div class="journey-cell" style="color:#ef9090">Reminder arrives too late · Restaurant unaware of dietary restrictions · No in-visit support</div>
+      <div class="journey-cell" style="color:#ef9090">Forgetting to review · Review process feels lengthy · Points feel abstract until redeemed</div>
+    </div>
+    <div class="journey-row" style="grid-template-columns:120px repeat(5,1fr)">
+      <div class="journey-row-label">Emotions</div>
+      <div class="journey-cell"><div class="journey-emotion">🤔 <span style="font-size:12px;color:var(--ot-sub)">Curious, overwhelmed</span></div></div>
+      <div class="journey-cell"><div class="journey-emotion">😊 <span style="font-size:12px;color:var(--ot-sub)">Hopeful, evaluating</span></div></div>
+      <div class="journey-cell"><div class="journey-emotion">😅 <span style="font-size:12px;color:var(--ot-sub)">Slight friction → relief on confirm</span></div></div>
+      <div class="journey-cell"><div class="journey-emotion">😄 <span style="font-size:12px;color:var(--ot-sub)">Anticipation → delight (ideally)</span></div></div>
+      <div class="journey-cell"><div class="journey-emotion">😌 <span style="font-size:12px;color:var(--ot-sub)">Satisfied · Appreciated</span></div></div>
+    </div>
+    <div class="journey-row" style="grid-template-columns:120px repeat(5,1fr)">
+      <div class="journey-row-label">3rd Party</div>
+      <div class="journey-cell" style="color:var(--accent-blue)">Google (search) · Booking.com · Trip.com</div>
+      <div class="journey-cell" style="color:var(--accent-blue)">—</div>
+      <div class="journey-cell" style="color:var(--accent-blue)">Google OAuth · Facebook OAuth · Apple Sign In · Stripe (payment)</div>
+      <div class="journey-cell" style="color:var(--accent-blue)">Uber One (VIP access) · Chase Sapphire Reserve · Visa Dining</div>
+      <div class="journey-cell" style="color:var(--accent-blue)">Amazon (gift card redemption)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────── 5. INTEGRATIONS ─────────── -->
+<section id="integrations" class="section">
+  <div class="sec-eyebrow">Section 05</div>
+  <h2 class="sec-title">3rd Party Integrations — Full Map</h2>
+  <p class="sec-desc">OpenTable operates as a platform hub connecting diners, restaurants, payment systems, travel platforms, marketing tools, and AI services. Every integration identified from live scraping of opentable.com and /restaurant-solutions/integrations/.</p>
+
+  <div class="callout">
+    <div class="callout-icon">🔍</div>
+    <div class="callout-text">Integrations discovered via: <strong>Partner Benefits page (/user/profile/benefits)</strong>, <strong>City landing pages</strong> (Chase Sapphire Reserve banner), <strong>Restaurant Solutions Integrations page</strong> (partner logo wall: Google, Booking.com, Aloha, TripAdvisor, Klaviyo, Yext, Slang, Meta, Uber Eats, Trip.com, Stripe, Apple, Wisely, Jobvite, Cventand more), and <strong>FAQ / account creation</strong> flows (Google/Facebook/Apple OAuth).</div>
+  </div>
+
+  <!-- DINER-FACING INTEGRATIONS -->
+  <h3 style="font-size:15px;margin-bottom:20px;font-weight:600">Diner-Facing (Consumer Integrations)</h3>
+  <div class="int-grid">
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--accent-blue)"></div>
+        <div class="int-group-title" style="color:var(--accent-blue)">Authentication / SSO</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Google OAuth</div><div class="int-item-desc">Sign up / Sign in with Google. Reduces friction on booking gate. Single-click account creation.</div></div>
+        <div class="int-item"><div class="int-item-name">Facebook OAuth</div><div class="int-item-desc">Sign up / Sign in with Facebook. Populates profile name and email automatically.</div></div>
+        <div class="int-item"><div class="int-item-name">Apple Sign In</div><div class="int-item-desc">Sign in with Apple ID on iOS devices. Privacy-first (hide-my-email option). Native iOS integration.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:#f59e0b"></div>
+        <div class="int-group-title" style="color:#f59e0b">Partner Benefits / VIP Access</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Uber One</div><div class="int-item-desc">Uber One subscribers get "Exclusive Tables" — primetime slots at popular restaurants not visible to standard users. Linked via Uber account connection in Partner Benefits. OpenTable VIPs also get free 6-month Uber One membership.</div></div>
+        <div class="int-item"><div class="int-item-name">Chase Sapphire Reserve</div><div class="int-item-desc">Sapphire Reserve cardmembers get exclusive table access + $300 annual dining credit. Displayed as promo banner on city landing pages. Card linked via Chase portal redirect.</div></div>
+        <div class="int-item"><div class="int-item-name">Visa Dining Collection</div><div class="int-item-desc">Visa cardholders access primetime tables and special events. Verified through Visa card link in Partner Benefits page.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--accent-teal)"></div>
+        <div class="int-group-title" style="color:var(--accent-teal)">Rewards Redemption</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Amazon</div><div class="int-item-desc">OpenTable points can be redeemed for Amazon gift cards. Fulfillment handled via Amazon Gift Card API — email delivery.</div></div>
+        <div class="int-item"><div class="int-item-name">In-venue credit</div><div class="int-item-desc">Bill credit redeemed directly at the restaurant on day of dining — handled through restaurant's POS integration.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--ot-red)"></div>
+        <div class="int-group-title" style="color:var(--ot-red)">Parent Company / Travel</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Booking Holdings (Parent)</div><div class="int-item-desc">OpenTable is owned by Booking Holdings — shares infrastructure, data, and cross-platform loyalty with Booking.com, Priceline, Kayak, Agoda.</div></div>
+        <div class="int-item"><div class="int-item-name">Booking.com</div><div class="int-item-desc">Hotel guests can discover and book OpenTable restaurants. Cross-platform recommendations visible in both apps.</div></div>
+        <div class="int-item"><div class="int-item-name">Trip.com</div><div class="int-item-desc">OpenTable restaurant bookings surfaced within Trip.com travel itineraries. Visible in restaurant solutions partner wall.</div></div>
+        <div class="int-item"><div class="int-item-name">TripAdvisor</div><div class="int-item-desc">OpenTable reservation widget embedded on TripAdvisor restaurant pages — cross-platform booking integration.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--accent-purple)"></div>
+        <div class="int-group-title" style="color:var(--accent-purple)">AI & Voice</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Slang AI</div><div class="int-item-desc">AI voice agent for restaurants — answers phone inquiries, books reservations via voice, routes to OpenTable. Visible on restaurant integrations page and referenced in AI Concierge partnerships.</div></div>
+        <div class="int-item"><div class="int-item-name">Microsoft Copilot</div><div class="int-item-desc">AI Concierge partnerships for extending OpenTable's natural language restaurant search into Microsoft's AI assistant ecosystem.</div></div>
+        <div class="int-item"><div class="int-item-name">Amazon Alexa+</div><div class="int-item-desc">Voice-activated restaurant discovery and booking through Alexa+ smart home integration.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--accent-green)"></div>
+        <div class="int-group-title" style="color:var(--accent-green)">Discovery / SEO</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Google Search / Maps</div><div class="int-item-desc">OpenTable reservation widgets appear directly in Google Search results ("Reserve a table" on restaurant Knowledge Panels). Critical discovery channel.</div></div>
+        <div class="int-item"><div class="int-item-name">Zagat</div><div class="int-item-desc">Zagat ratings integrated into restaurant profiles — OpenTable acquired Zagat's brand/data to enrich editorial content and credibility signals.</div></div>
+        <div class="int-item"><div class="int-item-name">Yext</div><div class="int-item-desc">Restaurant listing management and local search sync — ensures consistent info across Google, Apple Maps, Yelp, Bing.</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RESTAURANT-FACING INTEGRATIONS -->
+  <h3 style="font-size:15px;margin:40px 0 20px;font-weight:600">Restaurant-Facing (B2B Integrations)</h3>
+  <div class="int-grid">
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--accent-purple)"></div>
+        <div class="int-group-title" style="color:var(--accent-purple)">Point-of-Sale (POS)</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Aloha by NCR</div><div class="int-item-desc">Bi-directional sync between OpenTable reservations and Aloha POS — guest spend data feeds back to guest profiles for CRM. Visible in partner logo wall.</div></div>
+        <div class="int-item"><div class="int-item-name">Toast</div><div class="int-item-desc">Reservation and POS data sync — table turn times, check averages linked to guest profiles and analytics dashboards.</div></div>
+        <div class="int-item"><div class="int-item-name">Square, Lightspeed & others</div><div class="int-item-desc">OpenTable's API supports multiple POS providers for payment and spend data integration.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--accent-amber)"></div>
+        <div class="int-group-title" style="color:var(--accent-amber)">Delivery Platforms</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Uber Eats</div><div class="int-item-desc">OpenTable restaurant partners can integrate with Uber Eats for delivery alongside their dine-in reservation system. Referral fee model. Visible in restaurant solutions partner wall.</div></div>
+        <div class="int-item"><div class="int-item-name">Olo</div><div class="int-item-desc">Online ordering and delivery middleware — bridges restaurant ordering systems with OpenTable's guest profiles.</div></div>
+        <div class="int-item"><div class="int-item-name">DoorDash (via Olo)</div><div class="int-item-desc">Indirect delivery integration through Olo middleware connector.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--accent-green)"></div>
+        <div class="int-group-title" style="color:var(--accent-green)">Marketing & CRM</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Klaviyo</div><div class="int-item-desc">Email marketing automation — guest data from OpenTable syncs to Klaviyo for segmented campaigns, re-engagement flows, and birthday/anniversary triggers.</div></div>
+        <div class="int-item"><div class="int-item-name">Meta (Facebook/Instagram Ads)</div><div class="int-item-desc">Restaurant promotional ads and retargeting — guest data used for look-alike audience creation. Pixel integration for conversion tracking.</div></div>
+        <div class="int-item"><div class="int-item-name">Wisely</div><div class="int-item-desc">Guest intelligence / CRM platform — enriches OpenTable guest profiles with spend data, visit frequency, and loyalty scoring for restaurant operators.</div></div>
+        <div class="int-item"><div class="int-item-name">Yext (also B2B)</div><div class="int-item-desc">Restaurant-side: manages business listings, menus, and hours across directories from within OpenTable dashboard.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:var(--accent-teal)"></div>
+        <div class="int-group-title" style="color:var(--accent-teal)">Payments</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Stripe</div><div class="int-item-desc">Payment processing for credit card guarantees on reservations, prepaid dining experiences, and no-show fees. Visible in restaurant solutions partner wall.</div></div>
+        <div class="int-item"><div class="int-item-name">Apple Pay</div><div class="int-item-desc">Native iOS payment for in-app bookings requiring payment hold. Available through Apple integration.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:#f59e0b"></div>
+        <div class="int-group-title" style="color:#f59e0b">Hospitality / Events</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">Cvent</div><div class="int-item-desc">Event management platform for private dining and large group bookings — connects event RFPs to OpenTable's private dining module.</div></div>
+        <div class="int-item"><div class="int-item-name">Tripleseat</div><div class="int-item-desc">Private event and banquet management integration for restaurant groups managing large-party reservations.</div></div>
+      </div>
+    </div>
+
+    <div class="int-group">
+      <div class="int-group-header">
+        <div class="int-group-dot" style="background:#8b5cf6"></div>
+        <div class="int-group-title" style="color:#8b5cf6">APIs / Developer</div>
+      </div>
+      <div class="int-group-body">
+        <div class="int-item"><div class="int-item-name">OpenTable API (Public)</div><div class="int-item-desc">REST API for 3rd party developers to embed reservation widgets, access availability data, and build custom booking flows. Documented at /restaurant-solutions/resources.</div></div>
+        <div class="int-item"><div class="int-item-name">Webhook events</div><div class="int-item-desc">Reservation created / modified / cancelled events pushed to restaurant's systems in real-time.</div></div>
+        <div class="int-item"><div class="int-item-name">reCAPTCHA (Google)</div><div class="int-item-desc">Bot protection on restaurant onboarding forms and diner sign-up. Applied to Marketo form submissions.</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Integration Flow Diagram -->
+  <h3 style="font-size:15px;margin:48px 0 20px;font-weight:600">Integration Flow: Chase Sapphire Reserve Exclusive Tables</h3>
+  <p style="font-size:13px;color:var(--ot-sub);margin-bottom:24px">The most complete 3rd party flow — scraped from live Partner Benefits page.</p>
+  <div class="swimlane-wrap">
+    <div class="swimlane">
+      <div class="swimlane-header" style="grid-template-columns:repeat(5,1fr)">
+        <div class="swimlane-actor">Diner</div>
+        <div class="swimlane-actor">OpenTable UI</div>
+        <div class="swimlane-actor">OpenTable Backend</div>
+        <div class="swimlane-actor">Chase API</div>
+        <div class="swimlane-actor">Restaurant</div>
+      </div>
+      <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="swimlane-cell highlight">Sees Chase Sapphire Reserve banner on NYC city page or in Partner Benefits</div>
+        <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+      </div>
+      <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="swimlane-cell"></div>
+        <div class="swimlane-cell highlight">Clicks "Explore restaurants" or "Link your card" → Redirected to Chase portal</div>
+        <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+      </div>
+      <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="swimlane-cell">Logs into Chase, authorizes data sharing</div>
+        <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        <div class="swimlane-cell highlight"><span class="pill blue">CHASE API</span> Verifies Sapphire Reserve card status. Returns: eligible=true + $300 credit balance.</div>
+        <div class="swimlane-cell"></div>
+      </div>
+      <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        <div class="swimlane-cell highlight">Updates diner profile: partner_benefits += 'chase_sapphire_reserve'. Marks VIP tier. Unlocks primetime inventory.</div>
+        <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+      </div>
+      <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="swimlane-cell highlight">Searches NYC restaurants. Exclusive "Sapphire Reserve" tagged slots now appear.</div>
+        <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        <div class="swimlane-cell"></div>
+      </div>
+      <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="swimlane-cell">Books exclusive table. $300 credit applied at dining time.</div>
+        <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        <div class="swimlane-cell highlight"><span class="pill green">RESTAURANT</span> Reservation arrives with VIP flag. Staff alerted to premium guest. Dining credit honoured at checkout via Stripe.</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ─────────── 6. RESTAURANT SIDE ─────────── -->
+<section id="restaurants" class="section">
+  <div class="sec-eyebrow">Section 06</div>
+  <h2 class="sec-title">Restaurant-Side Flows</h2>
+  <p class="sec-desc">How restaurants experience OpenTable — from onboarding to daily operations to marketing.</p>
+
+  <div class="flow-section">
+    <div class="flow-title">Restaurant Onboarding Flow <span class="flow-tag" style="background:rgba(245,166,35,0.15);color:var(--accent-amber)">B2B</span></div>
+    <div class="swimlane-wrap">
+      <div class="swimlane">
+        <div class="swimlane-header" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-actor">Discovery</div>
+          <div class="swimlane-actor">Plan Selection</div>
+          <div class="swimlane-actor">Setup</div>
+          <div class="swimlane-actor">Integration</div>
+          <div class="swimlane-actor">Go Live</div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell highlight">Restaurant owner visits /restaurant-solutions. Watches case study video. Clicks "Get started".</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Takes "Find My Plan" quiz → Basic / Core / Pro / Enterprise recommendation. Views pricing. Initiates sign up or sales call.</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">Restaurant profile creation: photos, menu, hours, description, dietary tags, policies. Floor plan setup in Manager app.</div>
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight">POS integration (Aloha/Toast). Email/CRM connection (Klaviyo). Payment setup (Stripe). Listing sync (Yext). Delivery link (Uber Eats).</div>
+          <div class="swimlane-cell"></div>
+        </div>
+        <div class="swimlane-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div><div class="swimlane-cell"></div>
+          <div class="swimlane-cell highlight"><span class="pill green">LIVE</span> Restaurant appears in OpenTable search. Reservations begin. Manager app active. Training via OpenTable Academy.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-section">
+    <div class="flow-title">Daily Operations Loop <span class="flow-tag" style="background:rgba(20,184,166,0.15);color:var(--accent-teal)">Operations</span></div>
+    <div class="int-grid" style="margin-top:0">
+      <div class="int-group">
+        <div class="int-group-header"><div class="int-group-dot" style="background:var(--ot-red)"></div><div class="int-group-title">Pre-Service</div></div>
+        <div class="int-group-body">
+          <div class="int-item"><div class="int-item-name">Reservation queue review</div><div class="int-item-desc">Manager reviews upcoming reservations, guest notes, VIP flags, dietary restrictions in Owner App.</div></div>
+          <div class="int-item"><div class="int-item-name">Floor plan assignment</div><div class="int-item-desc">Assign reservations to specific tables. Optimize covers per shift.</div></div>
+          <div class="int-item"><div class="int-item-name">Guest profile preview</div><div class="int-item-desc">View returning guest history, preferences, spend data, special occasions.</div></div>
+        </div>
+      </div>
+      <div class="int-group">
+        <div class="int-group-header"><div class="int-group-dot" style="background:var(--accent-amber)"></div><div class="int-group-title">During Service</div></div>
+        <div class="int-group-body">
+          <div class="int-item"><div class="int-item-name">Walk-in management</div><div class="int-item-desc">Add walk-ins to online waitlist. Real-time table status updates.</div></div>
+          <div class="int-item"><div class="int-item-name">Direct messaging</div><div class="int-item-desc">Receive and reply to guest messages through Manager App.</div></div>
+          <div class="int-item"><div class="int-item-name">Table turns tracking</div><div class="int-item-desc">Mark tables as seated/available. POS data syncs check close time.</div></div>
+        </div>
+      </div>
+      <div class="int-group">
+        <div class="int-group-header"><div class="int-group-dot" style="background:var(--accent-green)"></div><div class="int-group-title">Post-Service</div></div>
+        <div class="int-group-body">
+          <div class="int-item"><div class="int-item-name">Analytics review</div><div class="int-item-desc">Covers, no-shows, table turns, avg spend — benchmarked against market peers.</div></div>
+          <div class="int-item"><div class="int-item-name">Review management</div><div class="int-item-desc">Read and respond to verified diner reviews. Flag inaccurate reviews.</div></div>
+          <div class="int-item"><div class="int-item-name">Guest profile enrichment</div><div class="int-item-desc">Add tags, notes to guest profiles. Feed data to Klaviyo for re-engagement campaigns.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: document.getElementById('mainNav').offsetTop, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
